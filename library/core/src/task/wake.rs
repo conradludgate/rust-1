@@ -1,7 +1,7 @@
 #![stable(feature = "futures_api", since = "1.36.0")]
 
 use crate::fmt;
-use crate::marker::{PhantomData, Unpin};
+use crate::marker::Unpin;
 
 /// A `RawWaker` allows the implementor of a task executor to create a [`Waker`]
 /// which provides customized wakeup behavior.
@@ -154,45 +154,6 @@ impl RawWakerVTable {
         drop: unsafe fn(*const ()),
     ) -> Self {
         Self { clone, wake, wake_by_ref, drop }
-    }
-}
-
-/// The `Context` of an asynchronous task.
-///
-/// Currently, `Context` only serves to provide access to a `&Waker`
-/// which can be used to wake the current task.
-#[stable(feature = "futures_api", since = "1.36.0")]
-pub struct Context<'a> {
-    waker: &'a Waker,
-    // Ensure we future-proof against variance changes by forcing
-    // the lifetime to be invariant (argument-position lifetimes
-    // are contravariant while return-position lifetimes are
-    // covariant).
-    _marker: PhantomData<fn(&'a ()) -> &'a ()>,
-}
-
-impl<'a> Context<'a> {
-    /// Create a new `Context` from a `&Waker`.
-    #[stable(feature = "futures_api", since = "1.36.0")]
-    #[must_use]
-    #[inline]
-    pub fn from_waker(waker: &'a Waker) -> Self {
-        Context { waker, _marker: PhantomData }
-    }
-
-    /// Returns a reference to the `Waker` for the current task.
-    #[stable(feature = "futures_api", since = "1.36.0")]
-    #[must_use]
-    #[inline]
-    pub fn waker(&self) -> &'a Waker {
-        &self.waker
-    }
-}
-
-#[stable(feature = "futures_api", since = "1.36.0")]
-impl fmt::Debug for Context<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Context").field("waker", &self.waker).finish()
     }
 }
 
