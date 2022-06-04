@@ -12,9 +12,7 @@ pub use self::poll::Poll;
 
 mod wake;
 #[stable(feature = "context_spawn", since = "1.63.0")]
-pub use self::spawn::{
-    JoinHandle, RawJoiner, RawJoinerVTable, RawSpawner, RawSpawnerVTable, Spawner,
-};
+pub use self::spawn::{RawSpawner, RawSpawnerVTable, Spawner};
 #[stable(feature = "futures_api", since = "1.36.0")]
 pub use self::wake::{RawWaker, RawWakerVTable, Waker};
 
