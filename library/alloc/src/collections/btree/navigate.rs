@@ -266,11 +266,12 @@ impl<BorrowType: marker::BorrowType, K, V> NodeRef<BorrowType, K, V, marker::Lea
         range: R,
     ) -> LeafRange<BorrowType, K, V>
     where
-        Q: Ord,
         K: Comparable<Q>,
         R: RangeBounds<Q>,
     {
-        match self.search_tree_for_bifurcation(&range) {
+        let lower_bound = SearchBound::from_range(range.start_bound());
+        let upper_bound = SearchBound::from_range(range.end_bound());
+        match self.search_tree_for_bifurcation(lower_bound, upper_bound) {
             Err(_) => LeafRange::none(),
             Ok((
                 node,
@@ -315,7 +316,7 @@ impl<'a, K: 'a, V: 'a> NodeRef<marker::Immut<'a>, K, V, marker::LeafOrInternal> 
     /// in a `BTreeMap` is.
     pub(super) fn range_search<Q, R>(self, range: R) -> LeafRange<marker::Immut<'a>, K, V>
     where
-        Q: ?Sized + Ord,
+        Q: ?Sized,
         K: Comparable<Q>,
         R: RangeBounds<Q>,
     {
@@ -341,7 +342,7 @@ impl<'a, K: 'a, V: 'a> NodeRef<marker::ValMut<'a>, K, V, marker::LeafOrInternal>
     /// Do not use the duplicate handles to visit the same KV twice.
     pub(super) fn range_search<Q, R>(self, range: R) -> LeafRange<marker::ValMut<'a>, K, V>
     where
-        Q: ?Sized + Ord,
+        Q: ?Sized,
         K: Comparable<Q>,
         R: RangeBounds<Q>,
     {

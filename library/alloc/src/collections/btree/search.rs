@@ -1,5 +1,5 @@
 use core::cmp::Ordering;
-use core::ops::{Bound, RangeBounds};
+use core::ops::Bound;
 
 use SearchBound::*;
 use SearchResult::*;
@@ -79,9 +79,10 @@ impl<BorrowType: marker::BorrowType, K, V> NodeRef<BorrowType, K, V, marker::Lea
     /// As a diagnostic service, panics if the range specifies impossible bounds.
     ///
     /// The result is meaningful only if the tree is ordered by key.
-    pub(super) fn search_tree_for_bifurcation<'r, Q: ?Sized, R>(
+    pub(super) fn search_tree_for_bifurcation<'r, Q: ?Sized>(
         mut self,
-        range: &'r R,
+        mut lower_bound: SearchBound<&'r Q>,
+        mut upper_bound: SearchBound<&'r Q>,
     ) -> Result<
         (
             NodeRef<BorrowType, K, V, marker::LeafOrInternal>,
@@ -93,37 +94,8 @@ impl<BorrowType: marker::BorrowType, K, V> NodeRef<BorrowType, K, V, marker::Lea
         Handle<NodeRef<BorrowType, K, V, marker::Leaf>, marker::Edge>,
     >
     where
-        Q: Ord,
         K: Comparable<Q>,
-        R: RangeBounds<Q>,
     {
-        // Determine if map or set is being searched
-        let is_set = <V as super::set_val::IsSetVal>::is_set_val();
-
-        // Inlining these variables should be avoided. We assume the bounds reported by `range`
-        // remain the same, but an adversarial implementation could change between calls (#81138).
-        let (start, end) = (range.start_bound(), range.end_bound());
-        match (start, end) {
-            (Bound::Excluded(s), Bound::Excluded(e)) if s == e => {
-                if is_set {
-                    panic!("range start and end are equal and excluded in BTreeSet")
-                } else {
-                    panic!("range start and end are equal and excluded in BTreeMap")
-                }
-            }
-            (Bound::Included(s) | Bound::Excluded(s), Bound::Included(e) | Bound::Excluded(e))
-                if s > e =>
-            {
-                if is_set {
-                    panic!("range start is greater than range end in BTreeSet")
-                } else {
-                    panic!("range start is greater than range end in BTreeMap")
-                }
-            }
-            _ => {}
-        }
-        let mut lower_bound = SearchBound::from_range(start);
-        let mut upper_bound = SearchBound::from_range(end);
         loop {
             let (lower_edge_idx, lower_child_bound) = self.find_lower_bound_index(lower_bound);
             let (upper_edge_idx, upper_child_bound) =

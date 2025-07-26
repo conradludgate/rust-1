@@ -1247,8 +1247,34 @@ impl<K, V, A: Allocator + Clone> BTreeMap<K, V, A> {
         K: Borrow<T> + Ord,
         R: RangeBounds<T>,
     {
+        // Determine if map or set is being searched
+        let is_set = <V as super::set_val::IsSetVal>::is_set_val();
+
+        // Inlining these variables should be avoided. We assume the bounds reported by `range`
+        // remain the same, but an adversarial implementation could change between calls (#81138).
+        let (start, end) = (range.start_bound(), range.end_bound());
+        match (start, end) {
+            (Bound::Excluded(s), Bound::Excluded(e)) if s == e => {
+                if is_set {
+                    panic!("range start and end are equal and excluded in BTreeSet")
+                } else {
+                    panic!("range start and end are equal and excluded in BTreeMap")
+                }
+            }
+            (Bound::Included(s) | Bound::Excluded(s), Bound::Included(e) | Bound::Excluded(e))
+                if s > e =>
+            {
+                if is_set {
+                    panic!("range start is greater than range end in BTreeSet")
+                } else {
+                    panic!("range start is greater than range end in BTreeMap")
+                }
+            }
+            _ => {}
+        }
+
         if let Some(root) = &self.root {
-            Range { inner: root.reborrow().range_search(range) }
+            Range { inner: root.reborrow().range_search((start, end)) }
         } else {
             Range { inner: LeafRange::none() }
         }
